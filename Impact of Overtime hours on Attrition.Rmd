@@ -1,11 +1,4 @@
----
-title: "Effect of Overtime on the employee attrition"
-author: "Kavya Puthuvaya (puthu003), Raghuveer Rao Vijjini (vijji002), Pranav Srinivas Nagavelli (nagav002), Abhinav Kumar (kumar528), Rutwik Rath (rath0126)"
-subtitle: 'Group Assignment 1'
-output: pdf_document
-toc: true
----
-  
+
 ```{r}
 rm(list = ls()); gc()
 suppressPackageStartupMessages({
