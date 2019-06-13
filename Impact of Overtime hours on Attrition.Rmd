@@ -1,0 +1,117 @@
+---
+title: "Effect of Overtime on the employee attrition"
+author: "Kavya Puthuvaya (puthu003), Raghuveer Rao Vijjini (vijji002), Pranav Srinivas Nagavelli (nagav002), Abhinav Kumar (kumar528), Rutwik Rath (rath0126)"
+subtitle: 'Group Assignment 1'
+output: pdf_document
+toc: true
+---
+  
+```{r}
+rm(list = ls()); gc()
+suppressPackageStartupMessages({
+library(readxl)
+library(stargazer)
+library(ggplot2)
+library(MatchIt)
+library(data.table)
+library(tableone)
+library(rbounds)
+})
+```
+The unit of analysis is *Employees* 
+
+The Unit of Analysis Employees
+Treatment: Overtime (Y/N)
+Outcome of Interest: Attrition (Y/N)
+
+# Descriptive Stats
+
+
+```{r}
+hr <- read.csv("C:/Users/Pranav/Desktop/ibm-hr-analytics-employee-attrition-performance/WA_Fn-UseC_-HR-Employee-Attrition.csv", header=TRUE)
+head(hr)
+colnames(hr)
+colnames(hr)[1] <- "Age"
+summary(hr)
+str(hr)
+
+hr$attrCode<-ifelse(hr$Attrition == 'Yes', 1, 0)
+hr$overcode<-ifelse(hr$OverTime == 'Yes', 1, 0)
+```
+
+
+
+
+
+```{r}
+colnames(hr)
+
+library(dplyr)
+
+
+hr_new <- hr %>%
+  group_by(OverTime, Attrition) %>% summarise(Count = n()) %>% group_by(OverTime) %>% mutate(perct = Count * 100/sum(Count))
+
+cl <- c("azure3", "#b30000")
+
+
+library(scales)
+ggplot(data = hr_new, aes(x=OverTime, y=perct)) + geom_bar(aes(fill = Attrition),stat = "identity") + scale_fill_manual(values=cl)+ labs(x = 'Over Time worked (Y/N)', y = "Percentage in Total") + theme(panel.background = element_blank())
+       
+```
+
+# Step 1: Covariate balance:
+
+
+```{r}
+set.seed(1979)
+
+tabUnmatched <- CreateTableOne(vars=c("Age", "BusinessTravel", "DailyRate", "Department", "DistanceFromHome", "Education", "EducationField",  "EmployeeNumber", "EnvironmentSatisfaction", "Gender", "HourlyRate", "JobInvolvement", "JobLevel", "JobRole", "JobSatisfaction", "MaritalStatus", "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating", "RelationshipSatisfaction", "StockOptionLevel", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager"), strata="OverTime", test=TRUE,data=hr)
+print(tabUnmatched, smd=TRUE)
+```
+
+
+
+```{r}
+hr$PS<-glm(OverTime~+ Age + BusinessTravel + DailyRate + Department + DistanceFromHome + Education + EducationField + EmployeeNumber + EnvironmentSatisfaction + Gender + HourlyRate + JobInvolvement + JobLevel + JobRole + JobSatisfaction + MaritalStatus + MonthlyIncome + MonthlyRate + NumCompaniesWorked  + PercentSalaryHike + PerformanceRating + RelationshipSatisfaction + StockOptionLevel + TotalWorkingYears + TrainingTimesLastYear + WorkLifeBalance + YearsAtCompany + YearsInCurrentRole + YearsSinceLastPromotion + YearsWithCurrManager, data=hr, family = "binomial")$fitted.values
+
+#hr$Over = plyr::mapvalues(hr$OverTime, from = c("No", "Yes"), to = c("0", "1"))
+
+
+```
+
+
+```{r}
+# Note: the matchit command may take a long time to run with large datasets
+Match <- matchit(overcode~+ Age + BusinessTravel + DailyRate + Department + DistanceFromHome + Education + EducationField  + EmployeeNumber + EnvironmentSatisfaction + Gender + HourlyRate + JobInvolvement + JobLevel + JobRole + JobSatisfaction + MaritalStatus + MonthlyIncome + MonthlyRate + NumCompaniesWorked +  PercentSalaryHike + PerformanceRating + RelationshipSatisfaction  + StockOptionLevel + TotalWorkingYears + TrainingTimesLastYear + WorkLifeBalance + YearsAtCompany + YearsInCurrentRole + YearsSinceLastPromotion + YearsWithCurrManager, data = hr, method = 'nearest', distance="logit", caliper=0.01,replace=FALSE)
+
+Matched.ids <- data.table(match.data(Match))$EmployeeNumber
+
+
+hr.Matched <- hr[hr$EmployeeNumber %in% Matched.ids,]
+
+```
+
+
+
+```{r}
+tabMatched <- CreateTableOne(vars=c("Age", "BusinessTravel", "DailyRate", "Department", "DistanceFromHome", "Education", "EducationField", "EmployeeNumber", "EnvironmentSatisfaction", "Gender", "HourlyRate", "JobInvolvement", "JobLevel", "JobRole", "JobSatisfaction", "MaritalStatus", "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating", "RelationshipSatisfaction", "StockOptionLevel", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager"), strata="OverTime", test=TRUE,data=hr.Matched)
+print(tabMatched, smd=TRUE)
+```
+
+
+
+
+```{r}
+summary(lm(attrCode ~overcode , data = hr.Matched))
+
+t.test(attrCode ~overcode, data=hr.Matched)
+#lm(Attr)
+
+
+ggplot(hr.Matched, aes(x = PS)) + 
+  geom_histogram(color = "white") + 
+  facet_wrap(~OverTime) + xlab("Pr(Premium)") +theme_bw() + coord_flip()
+
+```
+
