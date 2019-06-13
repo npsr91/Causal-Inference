@@ -32,10 +32,6 @@ hr$attrCode<-ifelse(hr$Attrition == 'Yes', 1, 0)
 hr$overcode<-ifelse(hr$OverTime == 'Yes', 1, 0)
 ```
 
-
-
-
-
 ```{r}
 colnames(hr)
 
@@ -69,8 +65,6 @@ print(tabUnmatched, smd=TRUE)
 hr$PS<-glm(OverTime~+ Age + BusinessTravel + DailyRate + Department + DistanceFromHome + Education + EducationField + EmployeeNumber + EnvironmentSatisfaction + Gender + HourlyRate + JobInvolvement + JobLevel + JobRole + JobSatisfaction + MaritalStatus + MonthlyIncome + MonthlyRate + NumCompaniesWorked  + PercentSalaryHike + PerformanceRating + RelationshipSatisfaction + StockOptionLevel + TotalWorkingYears + TrainingTimesLastYear + WorkLifeBalance + YearsAtCompany + YearsInCurrentRole + YearsSinceLastPromotion + YearsWithCurrManager, data=hr, family = "binomial")$fitted.values
 
 #hr$Over = plyr::mapvalues(hr$OverTime, from = c("No", "Yes"), to = c("0", "1"))
-
-
 ```
 
 
@@ -80,20 +74,13 @@ Match <- matchit(overcode~+ Age + BusinessTravel + DailyRate + Department + Dist
 
 Matched.ids <- data.table(match.data(Match))$EmployeeNumber
 
-
 hr.Matched <- hr[hr$EmployeeNumber %in% Matched.ids,]
-
 ```
-
-
 
 ```{r}
 tabMatched <- CreateTableOne(vars=c("Age", "BusinessTravel", "DailyRate", "Department", "DistanceFromHome", "Education", "EducationField", "EmployeeNumber", "EnvironmentSatisfaction", "Gender", "HourlyRate", "JobInvolvement", "JobLevel", "JobRole", "JobSatisfaction", "MaritalStatus", "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating", "RelationshipSatisfaction", "StockOptionLevel", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager"), strata="OverTime", test=TRUE,data=hr.Matched)
 print(tabMatched, smd=TRUE)
 ```
-
-
-
 
 ```{r}
 summary(lm(attrCode ~overcode , data = hr.Matched))
@@ -105,6 +92,5 @@ t.test(attrCode ~overcode, data=hr.Matched)
 ggplot(hr.Matched, aes(x = PS)) + 
   geom_histogram(color = "white") + 
   facet_wrap(~OverTime) + xlab("Pr(Premium)") +theme_bw() + coord_flip()
-
 ```
 
